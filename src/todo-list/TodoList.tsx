@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import uniqid from 'uniqid'
 import BottomNav from '../shared/BottomNav'
 import * as UI from '../shared/ui'
@@ -57,10 +57,32 @@ export type TaskList = Array<Todo>
  */
 
 export default function TodoList() {
+  const [username, setUsername] = useState<string>('')
   const [task, setTask] = useState<Task>('')
   const [taskList, setTaskList] = useState<TaskList>([])
-  console.log('Valeur de taskList' + taskList)
-  console.log('Valeur de task : ' + task)
+
+  useEffect(() => {
+    const storeUser = localStorage.getItem('user')
+
+    if (storeUser) {
+      setUsername(JSON.parse(storeUser).displayName)
+    }
+  }, [])
+
+  useEffect(() => {
+    console.log('Souscription au topic "changeUsername"')
+
+    const onUsernameChange = (topic: string, newUsername: string) => {
+      console.log('récéption du username : ' + newUsername)
+      setUsername(newUsername)
+    }
+
+    PubSub.subscribe('changeUsername', onUsernameChange)
+    return () => {
+      console.log('Désinscription au topic changeUsername')
+      PubSub.unsubscribe(onUsernameChange)
+    }
+  }, [])
 
   const onTaskChange = (event: React.SyntheticEvent<HTMLInputElement>) => {
     setTask(event.currentTarget.value)
@@ -162,7 +184,7 @@ export default function TodoList() {
           <UI.TagIcon className="fa-solid fa-user"></UI.TagIcon>
           <UI.TagLabelContainer>
             <UI.TagLabelEntitled>Par</UI.TagLabelEntitled>
-            <UI.TagLabel>John</UI.TagLabel>
+            <UI.TagLabel>{username}</UI.TagLabel>
           </UI.TagLabelContainer>
         </UI.Tag>
       </UI.CenteredFlexContainer>
